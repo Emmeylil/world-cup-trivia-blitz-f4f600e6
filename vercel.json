@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/assets/(.*)",
-      "destination": "/dist/client/assets/$1"
+      "destination": "/client/assets/$1"
     },
     {
       "source": "/(.*)",
