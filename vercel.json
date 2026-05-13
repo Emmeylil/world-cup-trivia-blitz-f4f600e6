@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.js": {
+      "runtime": "edge"
+    }
+  },
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/dist/client/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
+  ]
+}
