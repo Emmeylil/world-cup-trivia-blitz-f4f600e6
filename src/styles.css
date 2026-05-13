@@ -35,7 +35,8 @@
   --color-pitch: var(--pitch);
   --color-success: var(--success);
 
-  --font-display: "Anton", "Bebas Neue", system-ui, sans-serif;
+  --font-display: "Gotham", "Montserrat", system-ui, sans-serif;
+  --font-sans: "Gotham", "Inter", system-ui, sans-serif;
 }
 
 :root {
@@ -94,6 +95,7 @@
 @layer base {
   * { border-color: var(--color-border); }
   html, body { background: var(--background); color: var(--foreground); }
+  body { font-family: var(--font-sans); }
   body {
     background-image: var(--gradient-hero);
     background-attachment: fixed;
