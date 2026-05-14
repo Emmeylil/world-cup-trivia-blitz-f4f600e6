@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { storage, type Profile } from "@/lib/game-data";
-import { Flame, Trophy, Gift, LogOut, Award, Share2 } from "lucide-react";
+import { Flame, Trophy, Gift, LogOut, Award, Share2, Settings } from "lucide-react";
+
 
 export const Route = createFileRoute("/profile")({ component: ProfilePage });
 
@@ -81,7 +82,15 @@ function ProfilePage() {
       >
         <LogOut className="w-4 h-4" /> Sign out
       </button>
+
+      <Link
+        to="/admin"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-border text-muted-foreground text-sm font-semibold hover:bg-muted transition"
+      >
+        <Settings className="w-4 h-4" /> Admin Dashboard
+      </Link>
     </div>
+
   );
 }
 

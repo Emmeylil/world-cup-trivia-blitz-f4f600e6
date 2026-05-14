@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TRIVIA, QUESTION_TIME, POINTS_BASE, POINTS_TIME_BONUS, storage, generateVoucher } from "@/lib/game-data";
+import { firebaseService } from "@/lib/firebase-service";
+
 import { Confetti } from "@/components/Confetti";
 import { Check, X, Clock, Sparkles, Trophy } from "lucide-react";
 
@@ -19,7 +21,10 @@ function PlayPage() {
   const [correctCount, setCorrectCount] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
 
   const [voucher, setVoucher] = useState<string | null>(null);
   const won = score >= 600; // simulated threshold
@@ -27,9 +32,21 @@ function PlayPage() {
   useEffect(() => {
     const profile = storage.getProfile();
     if (!profile) setPhase("auth");
+    
+    async function loadQuestions() {
+      const q = await firebaseService.fetchQuestions();
+      if (q.length > 0) {
+        setQuestions(q);
+      } else {
+        setQuestions(TRIVIA); // Fallback
+      }
+      setLoadingQuestions(false);
+    }
+    loadQuestions();
   }, []);
 
-  const q = TRIVIA[qIdx];
+  const q = questions[qIdx];
+
 
   // Timer
   useEffect(() => {
@@ -72,14 +89,23 @@ function PlayPage() {
   }
 
   function next() {
-    if (qIdx + 1 >= TRIVIA.length) {
+    if (qIdx + 1 >= questions.length) {
       // finalize
+
       storage.addScore(score);
       const today = new Date().toDateString();
       const lastPlay = storage.getLastPlay();
       storage.setStreak(lastPlay === today ? storage.getStreak() : storage.getStreak() + 1);
       storage.setLastPlay(today);
+      
+      // Save to Firebase
+      const profile = storage.getProfile();
+      if (profile) {
+        firebaseService.saveScore(profile, score, storage.getStreak());
+      }
+
       if (won) {
+
         const code = generateVoucher();
         storage.addVoucher(code);
         setVoucher(code);
@@ -123,19 +149,21 @@ function PlayPage() {
         <div className="w-20 h-20 mx-auto rounded-full bg-gradient-gold grid place-items-center text-4xl shadow-glow">⚽</div>
         <h2 className="font-display text-2xl mt-4">READY, <span className="text-gradient-gold">CHAMPION?</span></h2>
         <ul className="text-sm text-muted-foreground mt-3 space-y-1">
-          <li>{TRIVIA.length} questions · {QUESTION_TIME}s each</li>
+          <li>{questions.length} questions · {QUESTION_TIME}s each</li>
           <li>+{POINTS_BASE} per correct · +{POINTS_TIME_BONUS} per second left</li>
           <li>Reach 600+ to win today's voucher</li>
         </ul>
         <button
           onClick={startGame}
-          className="mt-5 w-full bg-gradient-gold text-gold-foreground font-bold py-3.5 rounded-full shadow-glow active:scale-95 transition"
+          disabled={loadingQuestions}
+          className="mt-5 w-full bg-gradient-gold text-gold-foreground font-bold py-3.5 rounded-full shadow-glow active:scale-95 transition disabled:opacity-50"
         >
-          Kick Off
+          {loadingQuestions ? "Loading..." : "Kick Off"}
         </button>
       </div>
     );
   }
+
 
   // ---------- RESULT ----------
   if (phase === "result") {
@@ -153,9 +181,10 @@ function PlayPage() {
           </div>
           <div className="bg-muted/40 rounded-xl p-3">
             <div className="text-[10px] uppercase text-muted-foreground">Correct</div>
-            <div className="font-display text-2xl">{correctCount}/{TRIVIA.length}</div>
+            <div className="font-display text-2xl">{correctCount}/{questions.length}</div>
           </div>
         </div>
+
 
         {won && voucher && (
           <div className="mt-5 rounded-2xl border border-gold/50 bg-gradient-to-br from-gold/15 to-transparent p-4">
@@ -184,9 +213,10 @@ function PlayPage() {
     <div className="space-y-4 animate-pop-in">
       {/* HUD */}
       <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">Question <b className="text-foreground">{qIdx + 1}</b>/{TRIVIA.length}</span>
+        <span className="text-muted-foreground">Question <b className="text-foreground">{qIdx + 1}</b>/{questions.length}</span>
         <span className="flex items-center gap-1 text-gold font-bold"><Sparkles className="w-3 h-3" />{score} pts</span>
       </div>
+
 
       {/* Timer */}
       <div className="space-y-1">
